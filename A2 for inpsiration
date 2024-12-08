@@ -48,3 +48,42 @@ criterion = nn.CrossEntropyLoss()
 
 #using stochastic gradient descent with momentum
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
+
+train_transformations= transforms.Compose([
+    transforms.RandomApply([transforms.RandomRotation(20)], p=0.5),
+    transforms.RandomApply([transforms.RandomAffine(degrees=0, translate=(0.1, 0.1))], p=0.5)
+])
+
+#Using data augmentation helped improve my accuracy
+
+
+#TRAINING
+from torch.utils.data import DataLoader, TensorDataset
+train_dataset = TensorDataset(x_tensor, y_tensor)
+train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+
+for epoch in range(65):
+
+    r_loss = 0.0
+    for i,(inputs, labels) in enumerate(train_loader, 0):
+
+        inputs = torch.stack([train_transformations(img) for img in inputs])
+        optimizer.zero_grad()
+
+        # forward + backward + optimize
+        outputs = net(inputs)
+
+        loss = criterion(outputs, labels)
+        loss.backward() #compute gradients
+        optimizer.step()
+
+        # print statistics
+        r_loss += loss.item()
+        if i % 100 == 99:    # print every 100 mini-batches
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, r_loss / 100))
+            r_loss = 0.0
+
+print('Finished Training')
+
